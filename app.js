@@ -8,6 +8,7 @@ const campoMinutos = document.getElementById("minutos");
 const mensajeError = document.getElementById("mensaje-error");
 const numeroRacha = document.getElementById("racha-numero");
 const textoRacha = document.getElementById("racha-texto");
+const mejorRacha = document.getElementById("mejor-racha");
 const listaSesiones = document.getElementById("lista-sesiones");
 const mensajeVacio = document.getElementById("mensaje-vacio");
 
@@ -73,6 +74,41 @@ function calcularRacha(sesiones) {
   return racha;
 }
 
+// Calcula la mejor racha: el grupo más largo de días seguidos con sesión.
+// Las fechas futuras se ignoran. Varias sesiones el mismo día cuentan como un día.
+function calcularMejorRacha(sesiones) {
+  const dias = [];
+  const vistos = new Set();
+  for (const sesion of sesiones) {
+    if (sesion.fecha > hoyLocal() || vistos.has(sesion.fecha)) {
+      continue;
+    }
+    vistos.add(sesion.fecha);
+    dias.push(sesion.fecha);
+  }
+  dias.sort();
+
+  let mejor = 0;
+  let actual = 0;
+  let anterior = "";
+  for (const dia of dias) {
+    if (anterior !== "") {
+      const partes = anterior.split("-");
+      const siguiente = new Date(partes[0], partes[1] - 1, partes[2]);
+      siguiente.setDate(siguiente.getDate() + 1);
+      if (aTextoFechaLocal(siguiente) !== dia) {
+        actual = 0;
+      }
+    }
+    actual = actual + 1;
+    if (actual > mejor) {
+      mejor = actual;
+    }
+    anterior = dia;
+  }
+  return mejor;
+}
+
 // Convierte "AAAA-MM-DD" en una fecha legible, sin usar UTC
 function fechaLegible(textoFecha) {
   const partes = textoFecha.split("-");
@@ -101,6 +137,9 @@ function mostrar() {
   textoRacha.textContent = racha === 1
     ? "día seguido estudiando"
     : "días seguidos estudiando";
+
+  const mejor = calcularMejorRacha(sesiones);
+  mejorRacha.textContent = "🏆 Mejor racha: " + mejor + (mejor === 1 ? " día" : " días");
 
   listaSesiones.innerHTML = "";
   mensajeVacio.hidden = sesiones.length !== 0;
