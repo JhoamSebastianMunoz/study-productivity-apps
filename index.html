@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Diario de Estudio</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="contenedor">
+    <header>
+      <h1>Diario de Estudio</h1>
+      <p>Registra tus sesiones y mantén tu racha.</p>
+    </header>
+
+    <section class="racha">
+      <p class="racha-etiqueta">Racha actual</p>
+      <p class="racha-numero">🔥 <span id="racha-numero">0</span></p>
+      <p class="racha-texto" id="racha-texto">días seguidos estudiando</p>
+    </section>
+
+    <section class="tarjeta">
+      <h2>Nueva sesión</h2>
+      <form id="form-sesion">
+        <label for="fecha">Fecha</label>
+        <input type="date" id="fecha" name="fecha" required>
+
+        <label for="tema">Tema</label>
+        <input type="text" id="tema" name="tema" placeholder="Por ejemplo: Matemáticas" required>
+
+        <label for="minutos">Minutos</label>
+        <input type="number" id="minutos" name="minutos" min="1" step="1" placeholder="Por ejemplo: 30" required>
+
+        <button type="submit">Guardar sesión</button>
+        <p class="error" id="mensaje-error" hidden></p>
+      </form>
+    </section>
+
+    <section class="tarjeta">
+      <h2>Mis sesiones</h2>
+      <p id="mensaje-vacio">Todavía no tienes sesiones. ¡Registra la primera!</p>
+      <ul id="lista-sesiones"></ul>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
