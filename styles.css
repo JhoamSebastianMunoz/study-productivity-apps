@@ -69,6 +69,13 @@ header p {
   font-weight: bold;
 }
 
+.dias-mes {
+  margin: 8px 0 0;
+  color: #9a3412;
+  font-size: 14px;
+  font-weight: bold;
+}
+
 .tarjeta {
   background: white;
   border-radius: 12px;

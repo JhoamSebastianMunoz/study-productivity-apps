@@ -10,6 +10,7 @@ const numeroRacha = document.getElementById("racha-numero");
 const textoRacha = document.getElementById("racha-texto");
 const mejorRacha = document.getElementById("mejor-racha");
 const minutosSemana = document.getElementById("minutos-semana");
+const diasMes = document.getElementById("dias-mes");
 const listaSesiones = document.getElementById("lista-sesiones");
 const mensajeVacio = document.getElementById("mensaje-vacio");
 
@@ -49,6 +50,18 @@ function finSemanaLocal() {
   const domingo = new Date(partes[0], partes[1] - 1, partes[2]);
   domingo.setDate(domingo.getDate() + 6);
   return aTextoFechaLocal(domingo);
+}
+
+// Devuelve el primer día del mes actual (hora local) como "AAAA-MM-DD"
+function inicioMesLocal() {
+  const hoy = new Date();
+  return aTextoFechaLocal(new Date(hoy.getFullYear(), hoy.getMonth(), 1));
+}
+
+// Devuelve el último día del mes actual (hora local) como "AAAA-MM-DD"
+function finMesLocal() {
+  const hoy = new Date();
+  return aTextoFechaLocal(new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0));
 }
 
 // Lee las sesiones guardadas. Si no hay nada, devuelve una lista vacía.
@@ -145,6 +158,24 @@ function calcularMinutosSemana(sesiones) {
   return total;
 }
 
+// Cuenta los días únicos con sesión en el mes actual.
+// Ignora fechas futuras.
+function calcularDiasMes(sesiones) {
+  const inicio = inicioMesLocal();
+  const fin = finMesLocal();
+  const hoy = hoyLocal();
+  const dias = new Set();
+  for (const s of sesiones) {
+    if (s.fecha > hoy) {
+      continue;
+    }
+    if (s.fecha >= inicio && s.fecha <= fin) {
+      dias.add(s.fecha);
+    }
+  }
+  return dias.size;
+}
+
 // Convierte "AAAA-MM-DD" en una fecha legible, sin usar UTC
 function fechaLegible(textoFecha) {
   const partes = textoFecha.split("-");
@@ -183,6 +214,14 @@ function mostrar() {
     minutosSemana.hidden = false;
   } else {
     minutosSemana.hidden = true;
+  }
+
+  const dias = calcularDiasMes(sesiones);
+  if (dias > 0) {
+    diasMes.textContent = "Este mes: " + dias + (dias === 1 ? " día" : " días");
+    diasMes.hidden = false;
+  } else {
+    diasMes.hidden = true;
   }
 
   listaSesiones.innerHTML = "";
