@@ -14,34 +14,38 @@
     </header>
 
     <section class="racha">
-      <p class="racha-etiqueta">Racha actual</p>
-      <p class="racha-numero">🔥 <span id="racha-numero">0</span></p>
+      <p class="racha-numero" id="racha-numero">0</p>
       <p class="racha-texto" id="racha-texto">días seguidos estudiando</p>
-      <p class="mejor-racha" id="mejor-racha">🏆 Mejor racha: 0 días</p>
-      <p class="minutos-semana" id="minutos-semana" hidden>Esta semana: 0 min</p>
-      <p class="dias-mes" id="dias-mes" hidden>Este mes: 0 días</p>
+      <div class="racha-estadisticas">
+        <p class="mejor-racha" id="mejor-racha" hidden>🏆 Mejor racha: 0 días</p>
+        <p class="minutos-semana" id="minutos-semana" hidden>Esta semana: 0 min</p>
+        <p class="dias-mes" id="dias-mes" hidden>Este mes: 0 días</p>
+      </div>
     </section>
 
-    <section class="tarjeta">
+    <section>
       <h2>Nueva sesión</h2>
-      <form id="form-sesion">
-        <label for="fecha">Fecha</label>
-        <input type="date" id="fecha" name="fecha" required>
-
-        <label for="tema">Tema</label>
-        <input type="text" id="tema" name="tema" placeholder="Por ejemplo: Matemáticas" required>
-
-        <label for="minutos">Minutos</label>
-        <input type="number" id="minutos" name="minutos" min="1" step="1" placeholder="Por ejemplo: 30" required>
-
-        <button type="submit">Guardar sesión</button>
-        <p class="error" id="mensaje-error" hidden></p>
+      <form id="form-sesion" class="form-sesion">
+        <div class="form-grupo">
+          <label for="fecha">Fecha</label>
+          <input type="date" id="fecha" name="fecha" required>
+        </div>
+        <div class="form-grupo">
+          <label for="tema">Tema</label>
+          <input type="text" id="tema" name="tema" placeholder="Por ejemplo: Matemáticas" required>
+        </div>
+        <div class="form-grupo">
+          <label for="minutos">Minutos</label>
+          <input type="number" id="minutos" name="minutos" min="1" step="1" placeholder="Por ejemplo: 30" required>
+        </div>
+        <button type="submit" class="btn-guardar">Guardar sesión</button>
+        <p class="error" id="mensaje-error"></p>
       </form>
     </section>
 
-    <section class="tarjeta">
+    <section class="sesiones">
       <h2>Mis sesiones</h2>
-      <p id="mensaje-vacio">Todavía no tienes sesiones. ¡Registra la primera!</p>
+      <p id="mensaje-vacio">Todavía no tienes sesiones. Registra la primera arriba.</p>
       <ul id="lista-sesiones"></ul>
     </section>
   </main>

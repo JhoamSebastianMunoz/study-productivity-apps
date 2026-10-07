@@ -233,11 +233,22 @@ function mostrar() {
     const titulo = document.createElement("strong");
     titulo.textContent = sesion.tema;
 
-    const detalle = document.createElement("span");
-    detalle.textContent = fechaLegible(sesion.fecha) + " · " + sesion.minutos + " min";
+    const meta = document.createElement("div");
+    meta.className = "sesion-meta";
+
+    const fechaEl = document.createElement("span");
+    fechaEl.className = "sesion-fecha";
+    fechaEl.textContent = fechaLegible(sesion.fecha);
+
+    const minutosEl = document.createElement("span");
+    minutosEl.className = "sesion-minutos";
+    minutosEl.textContent = sesion.minutos + " min";
+
+    meta.appendChild(fechaEl);
+    meta.appendChild(minutosEl);
 
     item.appendChild(titulo);
-    item.appendChild(detalle);
+    item.appendChild(meta);
     listaSesiones.appendChild(item);
   }
 }
@@ -246,6 +257,7 @@ function mostrar() {
 formulario.addEventListener("submit", function (evento) {
   evento.preventDefault();
   mensajeError.hidden = true;
+  mensajeError.textContent = "";
 
   const fecha = campoFecha.value;
   const tema = campoTema.value.trim();
