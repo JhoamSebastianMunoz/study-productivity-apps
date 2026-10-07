@@ -9,6 +9,7 @@ const mensajeError = document.getElementById("mensaje-error");
 const numeroRacha = document.getElementById("racha-numero");
 const textoRacha = document.getElementById("racha-texto");
 const mejorRacha = document.getElementById("mejor-racha");
+const minutosSemana = document.getElementById("minutos-semana");
 const listaSesiones = document.getElementById("lista-sesiones");
 const mensajeVacio = document.getElementById("mensaje-vacio");
 
@@ -30,6 +31,24 @@ function ayerLocal() {
   const ayer = new Date();
   ayer.setDate(ayer.getDate() - 1);
   return aTextoFechaLocal(ayer);
+}
+
+// Devuelve el lunes de la semana actual (hora local) como "AAAA-MM-DD"
+function inicioSemanaLocal() {
+  const hoy = new Date();
+  const diaSemana = hoy.getDay(); // 0 = domingo, 1 = lunes, ...
+  const diff = diaSemana === 0 ? -6 : 1 - diaSemana; // lunes = 1
+  hoy.setDate(hoy.getDate() + diff);
+  return aTextoFechaLocal(hoy);
+}
+
+// Devuelve el domingo de la semana actual (hora local) como "AAAA-MM-DD"
+function finSemanaLocal() {
+  const inicio = inicioSemanaLocal();
+  const partes = inicio.split("-");
+  const domingo = new Date(partes[0], partes[1] - 1, partes[2]);
+  domingo.setDate(domingo.getDate() + 6);
+  return aTextoFechaLocal(domingo);
 }
 
 // Lee las sesiones guardadas. Si no hay nada, devuelve una lista vacía.
@@ -109,6 +128,23 @@ function calcularMejorRacha(sesiones) {
   return mejor;
 }
 
+// Suma los minutos de las sesiones que caen en la semana actual (lunes-domingo).
+// Ignora fechas futuras.
+function calcularMinutosSemana(sesiones) {
+  const inicio = inicioSemanaLocal();
+  const fin = finSemanaLocal();
+  let total = 0;
+  for (const s of sesiones) {
+    if (s.fecha > hoyLocal()) {
+      continue;
+    }
+    if (s.fecha >= inicio && s.fecha <= fin) {
+      total += s.minutos;
+    }
+  }
+  return total;
+}
+
 // Convierte "AAAA-MM-DD" en una fecha legible, sin usar UTC
 function fechaLegible(textoFecha) {
   const partes = textoFecha.split("-");
@@ -140,6 +176,14 @@ function mostrar() {
 
   const mejor = calcularMejorRacha(sesiones);
   mejorRacha.textContent = "🏆 Mejor racha: " + mejor + (mejor === 1 ? " día" : " días");
+
+  const minutos = calcularMinutosSemana(sesiones);
+  if (minutos > 0) {
+    minutosSemana.textContent = "Esta semana: " + minutos + " min";
+    minutosSemana.hidden = false;
+  } else {
+    minutosSemana.hidden = true;
+  }
 
   listaSesiones.innerHTML = "";
   mensajeVacio.hidden = sesiones.length !== 0;
