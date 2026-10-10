@@ -299,3 +299,297 @@ formulario.addEventListener("submit", function (evento) {
 // Al abrir la página: fecha por defecto = hoy, y mostrar los datos guardados
 campoFecha.value = hoyLocal();
 mostrar();
+
+// ===== HEATMAP INTEGRATION =====
+const HEATMAP_KEY = "diario-estudio-heatmap-semanas";
+const HEATMAP_DEFAULT_WEEKS = 12;
+
+const heatmapSection = document.getElementById("heatmap");
+const heatmapSelect = document.getElementById("heatmap-weeks-select");
+const heatmapInput = document.getElementById("heatmap-weeks-input");
+
+let heatmapTooltip = null;
+let tooltipTimeout = null;
+let focusedCell = null;
+
+function loadHeatmapWeeks() {
+  try {
+    const stored = localStorage.getItem(HEATMAP_KEY);
+    if (stored) {
+      const parsed = parseInt(stored, 10);
+      if (Number.isInteger(parsed) && parsed >= 1 && parsed <= 52) {
+        return parsed;
+      }
+    }
+  } catch (e) {
+    // ignore
+  }
+  return HEATMAP_DEFAULT_WEEKS;
+}
+
+function saveHeatmapWeeks(value) {
+  try {
+    const clamped = Math.max(1, Math.min(52, parseInt(value, 10) || HEATMAP_DEFAULT_WEEKS));
+    localStorage.setItem(HEATMAP_KEY, String(clamped));
+    return clamped;
+  } catch (e) {
+    return HEATMAP_DEFAULT_WEEKS;
+  }
+}
+
+function renderHeatMap(weeksBack) {
+  const sesiones = cargarSesiones();
+  const today = hoyLocal();
+  const weeksData = window.HeatmapLogic.getHeatMapData(sesiones, today, weeksBack);
+
+  // Build table
+  const table = document.createElement("table");
+  table.setAttribute("role", "img");
+  table.setAttribute("aria-label", `Mapa de calor de actividad de estudio: últimas ${weeksBack} semanas`);
+
+  const caption = document.createElement("caption");
+  caption.className = "visually-hidden";
+  caption.textContent = `Mapa de calor: últimas ${weeksBack} semanas`;
+  table.appendChild(caption);
+
+  // thead with day labels
+  const thead = document.createElement("thead");
+  const headerRow = document.createElement("tr");
+  const emptyTh = document.createElement("th");
+  emptyTh.setAttribute("scope", "col");
+  emptyTh.setAttribute("aria-hidden", "true");
+  headerRow.appendChild(emptyTh);
+
+  const dayLabels = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
+  for (const label of dayLabels) {
+    const th = document.createElement("th");
+    th.setAttribute("scope", "col");
+    th.textContent = label;
+    headerRow.appendChild(th);
+  }
+  thead.appendChild(headerRow);
+  table.appendChild(thead);
+
+  // tbody: 7 rows (Mon-Sun), each with weeksBack cells
+  const tbody = document.createElement("tbody");
+  const dayNames = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
+
+  for (let rowIdx = 0; rowIdx < 7; rowIdx++) {
+    const tr = document.createElement("tr");
+
+    // Row header (day name)
+    const th = document.createElement("th");
+    th.setAttribute("scope", "row");
+    th.textContent = dayNames[rowIdx];
+    tr.appendChild(th);
+
+    // Cells for each week (columns)
+    // weeksData[0] = oldest week, weeksData[weeksBack-1] = current week
+    // We want recent week on the right, so iterate weeksData in order
+    for (let weekIdx = 0; weekIdx < weeksBack; weekIdx++) {
+      const dayData = weeksData[weekIdx][rowIdx];
+      const td = document.createElement("td");
+      td.setAttribute("data-date", dayData.date);
+      td.setAttribute("data-level", String(dayData.level));
+      td.setAttribute("data-minutes", String(dayData.minutes));
+      td.setAttribute("tabindex", "0");
+
+      const minutesText = dayData.minutes > 0 ? `${dayData.minutes} min` : "Sin actividad";
+      td.setAttribute("aria-label", `Fecha: ${dayData.date}. Minutos: ${minutesText}`);
+
+      tr.appendChild(td);
+    }
+    tbody.appendChild(tr);
+  }
+  table.appendChild(tbody);
+
+  // Tooltip element
+  if (!heatmapTooltip) {
+    heatmapTooltip = document.createElement("div");
+    heatmapTooltip.id = "heatmap-tooltip";
+    heatmapTooltip.setAttribute("role", "tooltip");
+    heatmapTooltip.hidden = true;
+    document.body.appendChild(heatmapTooltip);
+  }
+
+  // Replace content
+  heatmapSection.innerHTML = "";
+  heatmapSection.appendChild(table);
+
+  // Event delegation on table
+  table.addEventListener("mouseenter", handleCellHover, true);
+  table.addEventListener("focusin", handleCellFocus, true);
+  table.addEventListener("mouseleave", handleCellLeave, true);
+  table.addEventListener("focusout", handleCellBlur, true);
+  table.addEventListener("click", handleCellClick);
+  table.addEventListener("keydown", handleCellKeydown);
+
+  // Sync controls
+  heatmapSelect.value = String(weeksBack);
+  heatmapInput.value = "";
+}
+
+function showTooltip(cell) {
+  if (tooltipTimeout) {
+    clearTimeout(tooltipTimeout);
+    tooltipTimeout = null;
+  }
+  tooltipTimeout = setTimeout(() => {
+    const date = cell.getAttribute("data-date");
+    const minutes = parseInt(cell.getAttribute("data-minutes"), 10);
+    const level = parseInt(cell.getAttribute("data-level"), 10);
+
+    let text;
+    if (minutes > 0) {
+      text = `${date}: ${minutes} min`;
+    } else {
+      text = `${date}: Sin actividad`;
+    }
+    heatmapTooltip.textContent = text;
+    heatmapTooltip.hidden = false;
+
+    positionTooltip(cell);
+  }, 150);
+}
+
+function hideTooltip() {
+  if (tooltipTimeout) {
+    clearTimeout(tooltipTimeout);
+    tooltipTimeout = null;
+  }
+  if (heatmapTooltip) {
+    heatmapTooltip.hidden = true;
+  }
+}
+
+function positionTooltip(cell) {
+  const rect = cell.getBoundingClientRect();
+  const tooltipRect = heatmapTooltip.getBoundingClientRect();
+  const left = rect.left + rect.width / 2 - tooltipRect.width / 2;
+  const top = rect.top - tooltipRect.height - 8;
+  heatmapTooltip.style.left = `${Math.max(8, Math.min(left, window.innerWidth - tooltipRect.width - 8))}px`;
+  heatmapTooltip.style.top = `${Math.max(8, top)}px`;
+}
+
+function handleCellHover(e) {
+  const cell = e.target.closest("td[data-date]");
+  if (cell) {
+    focusedCell = cell;
+    showTooltip(cell);
+  }
+}
+
+function handleCellFocus(e) {
+  const cell = e.target.closest("td[data-date]");
+  if (cell) {
+    focusedCell = cell;
+    showTooltip(cell);
+  }
+}
+
+function handleCellLeave(e) {
+  const cell = e.target.closest("td[data-date]");
+  if (cell && !cell.matches(":focus")) {
+    hideTooltip();
+    focusedCell = null;
+  }
+}
+
+function handleCellBlur(e) {
+  const cell = e.target.closest("td[data-date]");
+  if (cell && !cell.matches(":hover")) {
+    hideTooltip();
+    focusedCell = null;
+  }
+}
+
+function handleCellClick(e) {
+  const cell = e.target.closest("td[data-date]");
+  if (cell && window.matchMedia("(pointer: coarse)").matches) {
+    // Touch device: toggle tooltip
+    if (heatmapTooltip.hidden || focusedCell !== cell) {
+      focusedCell = cell;
+      showTooltip(cell);
+    } else {
+      hideTooltip();
+      focusedCell = null;
+    }
+  }
+}
+
+function handleCellKeydown(e) {
+  const cell = e.target.closest("td[data-date]");
+  if (!cell) return;
+
+  const table = cell.closest("table");
+  const cells = Array.from(table.querySelectorAll("td[data-date]"));
+  const idx = cells.indexOf(cell);
+  const weeksBack = parseInt(heatmapSelect.value, 10) || HEATMAP_DEFAULT_WEEKS;
+  const cols = weeksBack;
+  const rows = 7;
+
+  let newIdx = -1;
+  switch (e.key) {
+    case "ArrowRight":
+      newIdx = idx + rows;
+      break;
+    case "ArrowLeft":
+      newIdx = idx - rows;
+      break;
+    case "ArrowDown":
+      newIdx = idx + 1;
+      break;
+    case "ArrowUp":
+      newIdx = idx - 1;
+      break;
+    case "Enter":
+    case " ":
+      e.preventDefault();
+      showTooltip(cell);
+      focusedCell = cell;
+      return;
+    case "Escape":
+      hideTooltip();
+      focusedCell = null;
+      cell.blur();
+      return;
+    default:
+      return;
+  }
+
+  if (newIdx >= 0 && newIdx < cells.length) {
+    e.preventDefault();
+    cells[newIdx].focus();
+    // Tooltip will show via focusin handler
+  }
+}
+
+function initHeatmap() {
+  const weeks = loadHeatmapWeeks();
+  heatmapSelect.value = String(weeks);
+  renderHeatMap(weeks);
+
+  heatmapSelect.addEventListener("change", () => {
+    const weeks = saveHeatmapWeeks(heatmapSelect.value);
+    renderHeatMap(weeks);
+  });
+
+  heatmapInput.addEventListener("input", () => {
+    const val = parseInt(heatmapInput.value, 10);
+    if (Number.isInteger(val) && val >= 1 && val <= 52) {
+      const weeks = saveHeatmapWeeks(val);
+      renderHeatMap(weeks);
+    }
+  });
+
+  // Close tooltip on scroll/resize
+  window.addEventListener("scroll", hideTooltip);
+  window.addEventListener("resize", hideTooltip);
+}
+
+// Initialize heatmap after DOM ready
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initHeatmap);
+} else {
+  initHeatmap();
+}

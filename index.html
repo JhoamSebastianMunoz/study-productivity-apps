@@ -11,6 +11,16 @@
     <header>
       <h1>Diario de Estudio</h1>
       <p>Registra tus sesiones y mantén tu racha.</p>
+      <div class="heatmap-controles" id="heatmap-controles">
+        <label for="heatmap-weeks-select">Semanas:</label>
+        <select id="heatmap-weeks-select" name="heatmap-weeks-select">
+          <option value="4">4</option>
+          <option value="12" selected>12</option>
+          <option value="26">26</option>
+          <option value="52">52</option>
+        </select>
+        <input type="number" id="heatmap-weeks-input" name="heatmap-weeks-input" min="1" max="52" placeholder="Semanas" aria-label="Número de semanas personalizado">
+      </div>
     </header>
 
     <section class="racha">
@@ -48,8 +58,11 @@
       <p id="mensaje-vacio">Todavía no tienes sesiones. Registra la primera arriba.</p>
       <ul id="lista-sesiones"></ul>
     </section>
+
+    <section id="heatmap" aria-label="Mapa de calor de actividad de estudio"></section>
   </main>
 
+  <script src="heatmap-logic.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
